@@ -214,79 +214,78 @@ for i in range(0, num_steps):
     prev = next
 
 
-# generate plots
-fig, ax = plt.subplots()
-ax.set_title("Position vs time")
-ax.set_xlabel("t (s)")
-ax.set_ylabel("x (m)")
-ax.plot(ts, xs)
-# if in jupyter, use:
-#plt.show()
-plt.savefig('xs.png')
-
-
-# vel
-fig, ax = plt.subplots()
-ax.set_title("Velocity vs time")
-ax.set_xlabel("t (s)")
-ax.set_ylabel("v (m/s)")
-ax.plot(ts, vs)
-#plt.show()
-plt.savefig('vs.png')
-
-# accel
-fig, ax = plt.subplots()
-ax.set_title("Acceleration vs time")
-ax.set_xlabel("t (s)")
-ax.set_ylabel("a (m/s^2)")
-ax.plot(ts, accs)
-# plt.show()
-plt.savefig('as.png')
-
-
-#
-# def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
-#     _, ax = plt.subplots()
-#
-#     ax.set_title(title)
-#     ax.set_xlabel(x_label)
-#     ax.set_ylabel(y_label)
-#     ax.plot(x_data, y_data)
-#
-#     if filename != "":
-#         plt.savefig(filename)
-#
-#
-# # position
-# make_plot(
-#     "Position vs Time",
-#     "position.png",
-#     x_label="t (s)",
-#     y_label="x (m)",
-#     x_data=ts,
-#     y_data=xs,
-# )
-#
+# # generate plots
+# fig, ax = plt.subplots()
+# ax.set_title("Position vs time")
+# ax.set_xlabel("t (s)")
+# ax.set_ylabel("x (m)")
+# ax.plot(ts, xs)
 # # if in jupyter, use:
+# #plt.show()
+# plt.savefig('xs.png')
+# # vel
+# fig, ax = plt.subplots()
+# ax.set_title("Velocity vs time")
+# ax.set_xlabel("t (s)")
+# ax.set_ylabel("v (m/s)")
+# ax.plot(ts, vs)
+# #plt.show()
+# plt.savefig('vs.png')
+# # accel
+# fig, ax = plt.subplots()
+# ax.set_title("Acceleration vs time")
+# ax.set_xlabel("t (s)")
+# ax.set_ylabel("a (m/s^2)")
+# ax.plot(ts, accs)
 # # plt.show()
+# plt.savefig('as.png')
 #
-# # position
-# make_plot(
-#     "Velocity vs Time",
-#     "velocity.png",
-#     x_label="t (s)",
-#     y_label="v (m/s)",
-#     x_data=ts,
-#     y_data=vs,
-# )
-#
-#
-# # acceleration
-# make_plot(
-#     "Acceleration vs Time",
-#     "acceleration.png",
-#     x_label="t (s)",
-#     y_label="a (m/s^2)",
-#     x_data=ts,
-#     y_data=accs,
-# )
+
+
+
+
+def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
+    _, ax = plt.subplots()
+
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.plot(x_data, y_data)
+
+    if filename != "":
+        plt.savefig(filename)
+
+
+# position
+make_plot(
+    "Position vs Time",
+    "position.png",
+    x_label="t (s)",
+    y_label="x (m)",
+    x_data=ts,
+    y_data=xs,
+)
+
+# if in jupyter, use:
+# plt.show()
+
+# position
+make_plot(
+    "Velocity vs Time",
+    "velocity.png",
+    x_label="t (s)",
+    y_label="v (m/s)",
+    x_data=ts,
+    y_data=vs,
+)
+
+
+# acceleration
+make_plot(
+    "Acceleration vs Time",
+    "acceleration.png",
+    x_label="t (s)",
+    y_label="a (m/s^2)",
+    x_data=ts,
+    y_data=accs,
+)
