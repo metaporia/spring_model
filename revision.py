@@ -185,6 +185,8 @@ xs = []
 vs = []
 accs = []
 
+spring_forces = []
+
 
 prev = init(
     delta_t=0.1,
@@ -207,10 +209,13 @@ for i in range(0, num_steps):
     debug_state(next)
 
     # collect data for plotting
-    ts.append(next.k.t)
-    xs.append(next.k.x)
-    vs.append(next.k.v)
-    accs.append(next.k.a)
+    # to add a graph, just initialize a list above (under comment "Visualization")
+    # and append the value you want to track here.
+    ts.append(next.k.t) # time
+    xs.append(next.k.x) # postiion
+    vs.append(next.k.v) # velocity
+    accs.append(next.k.a) # acceleration
+    spring_forces.append(next.f.spring)
     prev = next
 
 
@@ -245,6 +250,10 @@ for i in range(0, num_steps):
 
 
 def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
+    """
+    Generate a plot.
+    Collect y_data in the for loop above that steps through the sim
+    """
     _, ax = plt.subplots()
 
     ax.set_title(title)
@@ -289,3 +298,15 @@ make_plot(
     x_data=ts,
     y_data=accs,
 )
+
+# spring force
+make_plot(
+    "Spring Force vs Time",
+    "spring_force.png",
+    x_label="t (s)",
+    y_label="F (N)",
+    x_data=ts,
+    y_data=xs,
+)
+
+plt.show()
