@@ -1,2 +1,4 @@
 *.png
 .direnv
+__pycache__/
+result

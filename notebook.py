@@ -1,4 +1,5 @@
 from math import copysign
+import matplotlib.pyplot as plt
 
 # GLOBALS
 g = -9.8  # m/s^2
@@ -168,14 +169,61 @@ class State:
         return curr
 
 
-if __name__ == "__main__":
-    prev = State.initial(
-        initial_height=12.0, mass=2.0, area=0.5, delta_t=0.1, k=15, coil_length=10
+# initialize lists to collect data for plotting
+
+# timesteps
+ts = []
+# positions
+xs = []
+
+# vel
+vs = []
+accs = []
+
+
+
+prev = State.initial(
+        initial_height=15.0, mass=2.0, area=0.5, delta_t=0.1, k=15, coil_length=5, drag_coeff = 0.1
     )
-    print(prev.equilibrium_wo_mass())
-    print(prev.equilibrium_w_mass())
-    num_steps = 30
-    print(prev)
-    for i in range(0, num_steps):
-        prev = prev.step()
-        print(prev)
+print(prev.equilibrium_wo_mass())
+print(prev.equilibrium_w_mass())
+num_steps =  60
+print(prev)
+for i in range(0, num_steps):
+    prev = prev.step()
+    #print(prev)
+
+    # collect data for plotting
+    ts.append(prev.t)
+    xs.append(prev.x)
+    vs.append(prev.v)
+    accs.append(prev.a)
+    
+
+# generate plots
+fig, ax = plt.subplots()
+ax.set_title("Position vs time")
+ax.set_xlabel("t (s)")
+ax.set_ylabel("x (m)")
+ax.plot(ts, xs)
+# if in jupyter, use:
+#plt.show()
+plt.savefig('xs.png')
+
+# vel
+fig, ax = plt.subplots()
+ax.set_title("Velocity vs time")
+ax.set_xlabel("t (s)")
+ax.set_ylabel("v (m/s)")
+ax.plot(ts, vs)
+#plt.show()
+plt.savefig('vs.png')
+
+# accel
+fig, ax = plt.subplots()
+ax.set_title("Acceleration vs time")
+ax.set_xlabel("t (s)")
+ax.set_ylabel("a (m/s^2)")
+ax.plot(ts, accs)
+# plt.show()
+plt.savefig('as.png')
