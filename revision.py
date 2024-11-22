@@ -188,22 +188,23 @@ accs = []
 spring_forces = []
 
 
+# change starting conditions here
 prev = init(
     delta_t=0.1,
     x=15.0,
-    mass=2.0,
-    drag_coeff=0.0,
+    mass=1.0,
+    drag_coeff=0.01,
     area=0.5,
     k=10,
     coil_length=8.0,
     v=0.0,
 )
+num_steps = 100 
 
 # coil_length is upper equilibrium point
 print(prev.c.coil_length)
 print(equilibrium_w_mass(prev.c))  # lower equilibrium point
 debug_state(prev)
-num_steps = 60
 for i in range(0, num_steps):
     next = step_sim(prev)
     debug_state(next)
@@ -306,7 +307,7 @@ make_plot(
     x_label="t (s)",
     y_label="F (N)",
     x_data=ts,
-    y_data=xs,
+    y_data=spring_forces,
 )
 
 plt.show()

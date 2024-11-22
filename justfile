@@ -10,11 +10,11 @@ run:
 
 
 open: run
-  feh --multiwindow *.png
+  feh --auto-zoom --auto-reload --multiwindow *.png
 
 open_each: run
   #!/usr/bin/env bash
   for i in *.png; 
   do 
-    feh "$i";
+    feh --auto-zoom --auto-reload -w "$i"& disown;
   done
