@@ -1,10 +1,7 @@
-from contextlib import ContextDecorator
 from math import copysign
-import matplotlib.pyplot as plt
-
-from collections import namedtuple
+from prettytable.colortable import ColorTable, Themes
 from typing import NamedTuple
-from dataclasses import dataclass
+import matplotlib.pyplot as plt
 
 # GLOBALS
 g = -9.8  # m/s^2
@@ -190,6 +187,7 @@ accs = []
 
 spring_forces = []
 f_nets = []
+drags = []
 
 
 # change starting conditions here
@@ -197,21 +195,21 @@ prev = init(
     delta_t=0.1,
     x=15.0,
     mass=1.0,
-    drag_coeff=0.01,
+    drag_coeff=0.11,
     area=0.5,
     k=10,
     coil_length=8.0,
     v=0.0,
 )
-num_steps = 200
+num_steps = 150
 
 # coil_length is upper equilibrium point
-print(prev.c.coil_length)
-print(equilibrium_w_mass(prev.c))  # lower equilibrium point
-debug_state(prev)
+# print(prev.c.coil_length)
+# print(equilibrium_w_mass(prev.c))  # lower equilibrium point
+# debug_state(prev)
 for i in range(0, num_steps):
     next = step_sim(prev)
-    debug_state(next)
+    # debug_state(next)
 
     # collect data for plotting
     # to add a graph, just initialize a list above (under comment "Visualization")
@@ -222,35 +220,8 @@ for i in range(0, num_steps):
     accs.append(next.k.a)  # acceleration
     spring_forces.append(next.f.spring)
     f_nets.append(next.f.net)
+    drags.append(next.f.drag)
     prev = next
-
-
-# # generate plots
-# fig, ax = plt.subplots()
-# ax.set_title("Position vs time")
-# ax.set_xlabel("t (s)")
-# ax.set_ylabel("x (m)")
-# ax.plot(ts, xs)
-# # if in jupyter, use:
-# #plt.show()
-# plt.savefig('xs.png')
-# # vel
-# fig, ax = plt.subplots()
-# ax.set_title("Velocity vs time")
-# ax.set_xlabel("t (s)")
-# ax.set_ylabel("v (m/s)")
-# ax.plot(ts, vs)
-# #plt.show()
-# plt.savefig('vs.png')
-# # accel
-# fig, ax = plt.subplots()
-# ax.set_title("Acceleration vs time")
-# ax.set_xlabel("t (s)")
-# ax.set_ylabel("a (m/s^2)")
-# ax.plot(ts, accs)
-# # plt.show()
-# plt.savefig('as.png')
-#
 
 
 def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
@@ -315,12 +286,47 @@ make_plot(
 
 # spring force
 make_plot(
-    "NetForce vs Time",
-    "net_force.png",
+    "Drag Force vs Time",
+    "drag_force.png",
     x_label="t (s)",
     y_label="F (N)",
     x_data=ts,
-    y_data=f_nets,
+    y_data=drags,
 )
 
+# # spring force
+# make_plot(
+#     "NetForce vs Time",
+#     "net_force.png",
+#     x_label="t (s)",
+#     y_label="F (N)",
+#     x_data=ts,
+#     y_data=f_nets,
+# )
+#
 plt.show()
+
+# generate human readable table
+
+table = ColorTable(theme=Themes.OCEAN)
+
+# add columns
+table.add_column("t (s)", ts)
+table.add_column("v (m/s)", vs)
+table.add_column("a (m/s^2)", accs)
+table.add_column("x (m)", xs)
+table.add_column("f_net (N)", f_nets)
+table.add_column("F_S (N)", spring_forces)
+table.add_column("Drag (N)", drags)
+
+table.align = "r"
+table.float_format = ".1"
+
+# table -> html
+table.format = True
+table.border = True
+
+html = table.get_html_string()
+with open("table.html", "w") as f:
+    f.write(html)
+print(table)
