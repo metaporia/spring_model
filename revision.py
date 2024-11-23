@@ -55,9 +55,12 @@ class SimState(NamedTuple):
     k: Kin
     f: Forces
 
+
 def debug_state(s: SimState):
-    c,k,f = s
-    print(f"t={k.t:.1f}, f_d={f.drag:.1f}, f_s={f.spring:.1f}, f_net={f.net:.1f}, a={k.a:.1f}, v={k.v:.1f}, x={k.x:.1f}")
+    c, k, f = s
+    print(
+        f"t={k.t:.1f}, f_d={f.drag:.1f}, f_s={f.spring:.1f}, f_net={f.net:.1f}, a={k.a:.1f}, v={k.v:.1f}, x={k.x:.1f}"
+    )
 
 
 def init(delta_t, x, mass, drag_coeff, area, k, coil_length, v=0.0) -> SimState:
@@ -186,6 +189,7 @@ vs = []
 accs = []
 
 spring_forces = []
+f_nets = []
 
 
 # change starting conditions here
@@ -199,7 +203,7 @@ prev = init(
     coil_length=8.0,
     v=0.0,
 )
-num_steps = 100 
+num_steps = 200
 
 # coil_length is upper equilibrium point
 print(prev.c.coil_length)
@@ -212,11 +216,12 @@ for i in range(0, num_steps):
     # collect data for plotting
     # to add a graph, just initialize a list above (under comment "Visualization")
     # and append the value you want to track here.
-    ts.append(next.k.t) # time
-    xs.append(next.k.x) # postiion
-    vs.append(next.k.v) # velocity
-    accs.append(next.k.a) # acceleration
+    ts.append(next.k.t)  # time
+    xs.append(next.k.x)  # postiion
+    vs.append(next.k.v)  # velocity
+    accs.append(next.k.a)  # acceleration
     spring_forces.append(next.f.spring)
+    f_nets.append(next.f.net)
     prev = next
 
 
@@ -246,8 +251,6 @@ for i in range(0, num_steps):
 # # plt.show()
 # plt.savefig('as.png')
 #
-
-
 
 
 def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
@@ -308,6 +311,16 @@ make_plot(
     y_label="F (N)",
     x_data=ts,
     y_data=spring_forces,
+)
+
+# spring force
+make_plot(
+    "NetForce vs Time",
+    "net_force.png",
+    x_label="t (s)",
+    y_label="F (N)",
+    x_data=ts,
+    y_data=f_nets,
 )
 
 plt.show()
