@@ -515,6 +515,23 @@ typing = ["typing-extensions"]
 xmp = ["defusedxml"]
 
 [[package]]
+name = "prettytable"
+version = "3.12.0"
+description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "prettytable-3.12.0-py3-none-any.whl", hash = "sha256:77ca0ad1c435b6e363d7e8623d7cc4fcf2cf15513bf77a1c1b2e814930ac57cc"},
+    {file = "prettytable-3.12.0.tar.gz", hash = "sha256:f04b3e1ba35747ac86e96ec33e3bb9748ce08e254dc2a1c6253945901beec804"},
+]
+
+[package.dependencies]
+wcwidth = "*"
+
+[package.extras]
+tests = ["pytest", "pytest-cov", "pytest-lazy-fixtures"]
+
+[[package]]
 name = "pyparsing"
 version = "3.2.0"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -553,7 +570,18 @@ files = [
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
 ]
 
+[[package]]
+name = "wcwidth"
+version = "0.2.13"
+description = "Measures the displayed width of unicode strings in a terminal"
+optional = false
+python-versions = "*"
+files = [
+    {file = "wcwidth-0.2.13-py2.py3-none-any.whl", hash = "sha256:3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859"},
+    {file = "wcwidth-0.2.13.tar.gz", hash = "sha256:72ea0c06399eb286d978fdedb6923a9eb47e1c486ce63e9b4e64fc18303972b5"},
+]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3d77c178397a87c8a5e10ac940d83289ac13d5131481c5981ef85aac8941835e"
+content-hash = "e0fbad96c6821795bc5d11e4f4d68b2380ac5c3cdfd1da952165dda45dff2f2a"
