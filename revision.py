@@ -129,8 +129,11 @@ def drag_force(c: InitialConditions, k: Kin) -> float:
     - `F_drag = drag_coeff * v^2 * area`
     """
     # invert velocity direction
-    direction = copysign(1, k.v) * -1
-    return direction * c.drag_coeff * (k.v**2) * c.area
+    dir_v = copysign(1, k.v)
+    direction_drag = dir_v * -1
+    # compute positive drag force and apply `direction_drag` to ensure it's
+    # opposite
+    return direction_drag * c.drag_coeff * (k.v**2) * c.area
 
 
 def spring_force(c: InitialConditions, k: Kin) -> float:
@@ -141,19 +144,29 @@ def spring_force(c: InitialConditions, k: Kin) -> float:
     If `v < 0` (mass is moving downwards) and `x <= coil_length`,
     then apply spring force: `F_s = kd` where `d = coil_length - x`.
     """
-
     displacement = c.coil_length - k.x
     # spring force is always positive
     F_s = c.k * displacement
 
     if k.v <= 0 and k.x <= c.coil_length:
         # moving down and in contact with spring
+        print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
         return F_s
-    elif k.v > 0 and k.x <= equilibrium_w_mass(c):
+
+        # use this alternate condition to disable spring force when ball passes
+        # (moving upwards) the lower equilibrium point (with ball mass). This
+        # is what Marcus suggested we use, but it causes the model to lose
+        # energy (work done by the spring over the distance between the two 
+        # equilibrium  points is lost)
+
+    #elif k.v > 0 and k.x <= equilibrium_w_mass(c):
+    elif k.v >= 0 and k.x <= c.coil_length:
         # moving up and in contact with spring, release force at lower
         # equilibrium point
+        print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
         return F_s
     else:
+        print("t = ", k.t, " disp = ", displacement, "spring_force = ", 0.0)
         return 0.0
 
 
@@ -192,16 +205,16 @@ drags = []
 
 # change starting conditions here
 prev = init(
-    delta_t=0.1,
-    x=15.0,
+    delta_t=0.05,
+    x=19.0, # initial height
     mass=1.0,
-    drag_coeff=0.11,
-    area=0.5,
-    k=10,
-    coil_length=8.0,
+    drag_coeff=0.0,
+    area=0.0,
+    k=10, # spring constant
+    coil_length=19.0,
     v=0.0,
 )
-num_steps = 150
+num_steps = 300
 
 # coil_length is upper equilibrium point
 # print(prev.c.coil_length)
@@ -221,6 +234,7 @@ for i in range(0, num_steps):
     spring_forces.append(next.f.spring)
     f_nets.append(next.f.net)
     drags.append(next.f.drag)
+
     prev = next
 
 
