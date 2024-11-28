@@ -9,8 +9,6 @@ MAX_STEPS = 100
 
 
 # DATATYPES
-
-
 class Kin(NamedTuple):
     """
     values that need to be tracked throughout
@@ -62,7 +60,8 @@ def debug_state(s: SimState):
 
 def init(delta_t, x, mass, drag_coeff, area, k, coil_length, v=0.0) -> SimState:
     """
-    create
+    create initial row from global constants and initial values kinematic
+    values
     """
     c = InitialConditions(
         delta_t,
@@ -156,11 +155,14 @@ def spring_force(c: InitialConditions, k: Kin) -> float:
         # use this alternate condition to disable spring force when ball passes
         # (moving upwards) the lower equilibrium point (with ball mass). This
         # is what Marcus suggested we use, but it causes the model to lose
-        # energy (work done by the spring over the distance between the two 
+        # energy (work done by the spring over the distance between the two
         # equilibrium  points is lost)
 
-    #elif k.v > 0 and k.x <= equilibrium_w_mass(c):
-    elif k.v >= 0 and k.x <= c.coil_length:
+        # with the lossy model, the graphs get weird af if the ball is dropped
+        # too close to the spring. we have no idea why
+
+    elif k.v > 0 and k.x <= equilibrium_w_mass(c):
+        # elif k.v >= 0 and k.x <= c.coil_length:
         # moving up and in contact with spring, release force at lower
         # equilibrium point
         print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
@@ -185,36 +187,32 @@ def equilibrium_w_mass(c: InitialConditions) -> float:
     """
     return c.coil_length - (c.mass * (-g)) / c.k
 
-
 # Visualization
 # initialize lists to collect data for plotting
-
-# timesteps
-ts = []
-# positions
-xs = []
-
-# vel
-vs = []
+ts = []  # timesteps
+xs = []  # positions
+vs = []  # vel
 accs = []
-
 spring_forces = []
 f_nets = []
 drags = []
 
-
 # change starting conditions here
 prev = init(
-    delta_t=0.05,
-    x=19.0, # initial height
+    # the lossy model (with two equilibrium points) comes to rest if the time
+    # step is lowered sufficiently. I think this is due to error inherent in
+    # our simulation style (current state calculations use old data and a
+    # linear approximation, so lowering delta_t increases accuracy two-fold).
+    delta_t=0.002,
+    x=19.0,  # initial height
     mass=1.0,
     drag_coeff=0.0,
     area=0.0,
-    k=10, # spring constant
-    coil_length=19.0,
+    k=10,  # spring constant
+    coil_length=17.0,
     v=0.0,
 )
-num_steps = 300
+num_steps = 10000
 
 # coil_length is upper equilibrium point
 # print(prev.c.coil_length)
