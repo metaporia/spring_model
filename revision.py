@@ -187,6 +187,7 @@ def equilibrium_w_mass(c: InitialConditions) -> float:
     """
     return c.coil_length - (c.mass * (-g)) / c.k
 
+
 # Visualization
 # initialize lists to collect data for plotting
 ts = []  # timesteps
