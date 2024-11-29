@@ -28,20 +28,23 @@ class InitialConditions(NamedTuple):
     area: float
     k: float
     coil_length: float
+    b: float  # spring damping coefficient
+    lossy_spring: bool
 
 
 class Forces(NamedTuple):
     grav: float
     drag: float
     spring: float
+    damp: float  # spring damping
     net: float
 
     @staticmethod
-    def new(grav, drag, spring):
+    def new(grav, drag, spring, damp):
         """
         Creat new `Forces` object. Compute net force.
         """
-        return Forces(grav, drag, spring, net=grav + drag + spring)
+        return Forces(grav, drag, spring, damp, net=grav + drag + spring + damp)
 
 
 # (conditions, kin, forces)
@@ -52,27 +55,29 @@ class SimState(NamedTuple):
 
 
 def debug_state(s: SimState):
-    c, k, f = s
+    _, k, f = s
     print(
         f"t={k.t:.1f}, f_d={f.drag:.1f}, f_s={f.spring:.1f}, f_net={f.net:.1f}, a={k.a:.1f}, v={k.v:.1f}, x={k.x:.1f}"
     )
 
 
-def init(delta_t, x, mass, drag_coeff, area, k, coil_length, v=0.0) -> SimState:
+def init(
+    delta_t, x, mass, drag_coeff, area, k, coil_length, b, v=0.0, lossy_spring=False
+) -> SimState:
     """
     create initial row from global constants and initial values kinematic
     values
     """
     c = InitialConditions(
-        delta_t,
-        mass,
-        drag_coeff,
-        area,
-        k,
-        coil_length,
+        delta_t, mass, drag_coeff, area, k, coil_length, b, lossy_spring=lossy_spring
     )
     k = Kin(t=0, v=v, a=g, x=x)
-    f = Forces.new(grav=mass * g, drag=drag_force(c, k), spring=spring_force(c, k))
+    f = Forces.new(
+        grav=mass * g,
+        drag=drag_force(c, k),
+        spring=spring_force(c, k),
+        damp=damping_force(c, k),
+    )
     return SimState(c, k, f)
 
 
@@ -100,8 +105,9 @@ def step_sim(prev: SimState) -> SimState:
 
     drag = drag_force(prev.c, prev.k)
     spring = spring_force(prev.c, prev.k)
+    damp = damping_force(prev.c, prev.k)
     # `Forces.new` calculates net force
-    new_forces = Forces.new(prev.f.grav, drag, spring)
+    new_forces = Forces.new(prev.f.grav, drag, spring, damp)
 
     # update kinematic values from forces
     t = k.t + c.delta_t  # bump time
@@ -114,6 +120,13 @@ def step_sim(prev: SimState) -> SimState:
     # create next state
     next = SimState(c, new_k, new_forces)
     return next
+
+
+def damping_force(c: InitialConditions, k: Kin) -> float:
+    """
+    F_damp = -bv if x < coil_length
+    """
+    return -c.b * k.v if k.x <= c.coil_length else 0.0
 
 
 def drag_force(c: InitialConditions, k: Kin) -> float:
@@ -142,34 +155,50 @@ def spring_force(c: InitialConditions, k: Kin) -> float:
     Let `d` be the spring displacement.
     If `v < 0` (mass is moving downwards) and `x <= coil_length`,
     then apply spring force: `F_s = kd` where `d = coil_length - x`.
+
+    Spring force is always positive
     """
     displacement = c.coil_length - k.x
     # spring force is always positive
     F_s = c.k * displacement
 
-    if k.v <= 0 and k.x <= c.coil_length:
-        # moving down and in contact with spring
-        print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
-        return F_s
+    # sorry for sphagetti, last minutte addition of `lossy_spring` toggle
+    if c.lossy_spring:
+        if k.v <= 0 and k.x <= c.coil_length:
+            # moving down and in contact with spring
+            print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
+            return F_s
 
-        # use this alternate condition to disable spring force when ball passes
-        # (moving upwards) the lower equilibrium point (with ball mass). This
-        # is what Marcus suggested we use, but it causes the model to lose
-        # energy (work done by the spring over the distance between the two
-        # equilibrium  points is lost)
+            # use this alternate condition to disable spring force when ball passes
+            # (moving upwards) the lower equilibrium point (with ball mass). This
+            # is what Marcus suggested we use, but it causes the model to lose
+            # energy (work done by the spring over the distance between the two
+            # equilibrium  points is lost)
 
-        # with the lossy model, the graphs get weird af if the ball is dropped
-        # too close to the spring. we have no idea why
+            # with the lossy model, the graphs get weird af if the ball is dropped
+            # too close to the spring. we have no idea why
 
-    elif k.v > 0 and k.x <= equilibrium_w_mass(c):
-        # elif k.v >= 0 and k.x <= c.coil_length:
-        # moving up and in contact with spring, release force at lower
-        # equilibrium point
-        print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
-        return F_s
+        elif k.v > 0 and k.x <= equilibrium_w_mass(c):
+            # elif k.v >= 0 and k.x <= c.coil_length:
+            # moving up and in contact with spring, release force at lower
+            # equilibrium point
+            print("t = ", k.t, " disp = ", displacement, "spring_force = ", F_s)
+            return F_s
+        else:
+            print("t = ", k.t, " disp = ", displacement, "spring_force = ", 0.0)
+            return 0.0
     else:
-        print("t = ", k.t, " disp = ", displacement, "spring_force = ", 0.0)
-        return 0.0
+        if k.x <= c.coil_length:
+            return F_s
+        else:
+            return 0.0
+
+
+def velocity_direction(k: Kin) -> float:
+    """
+    Returns -1 or 1 based on direction of velocity
+    """
+    return k.v / abs(k.v)
 
 
 def equilibrium_w_mass(c: InitialConditions) -> float:
@@ -200,7 +229,7 @@ drags = []
 
 # slide 8 Muddled molting part 2
 # num_steps = 10000
-stabilized =  init(
+stabilized = init(
     delta_t=0.002,
     x=19.0,
     mass=1.0,
@@ -208,12 +237,13 @@ stabilized =  init(
     area=0.0,
     k=10,
     coil_length=17.0,
+    b=0.0,
     v=0.0,
 )
 
 # slide 8 Muddled molting part 2
 # num_steps = 10000
-stabilized =  init(
+stabilized = init(
     delta_t=0.002,
     x=19.0,
     mass=1.0,
@@ -221,30 +251,42 @@ stabilized =  init(
     area=0.0,
     k=10,
     coil_length=17.0,
+    b=0.0,
     v=0.0,
 )
 
 # slide 9 It breaks down
 # num_steps = 2000
-unstable =  init( delta_t=0.01, x=12.0, mass=1.0, drag_coeff=0.0, area=0.0, k=10, coil_length=12.0, v=0.0,
-)
-
-num_steps = 1000
-# change starting conditions here
-prev = unstable
-dummy = init(
-    # the lossy model (with two equilibrium points) comes to rest if the time
-    # step is lowered sufficiently. I think this is due to error inherent in
-    # our simulation style (current state calculations use old data and a
-    # linear approximation, so lowering delta_t increases accuracy two-fold).
-    delta_t=0.002,
-    x=19.0,
+unstable = init(
+    delta_t=0.01,
+    x=12.0,
     mass=1.0,
     drag_coeff=0.0,
     area=0.0,
     k=10,
-    coil_length=17.0,
+    coil_length=12.0,
+    b=0.0,
     v=0.0,
+)
+
+num_steps = 1000
+# change starting conditions here
+#
+# the lossy model (with two equilibrium points) comes to rest if the time
+# step is lowered sufficiently. I think this is due to error inherent in
+# our simulation style (current state calculations use old data and a
+# linear approximation, so lowering delta_t increases accuracy two-fold).
+prev = init(
+    delta_t=0.05,
+    x=13.0,
+    mass=1.0,
+    drag_coeff=.1,
+    area=0.1,
+    k=10,
+    coil_length=8.0,
+    b=0.2,
+    v=0.0,
+    lossy_spring=False,
 )
 
 # coil_length is upper equilibrium point
