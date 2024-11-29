@@ -15,7 +15,7 @@ open: run
 
 open_each: run
   #!/usr/bin/env bash
-  for i in *.png; 
+  for i in {acceleration,position,velocity}.png; 
   do 
     feh --auto-zoom --auto-reload -w "$i"& disown;
   done

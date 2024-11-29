@@ -77,26 +77,7 @@ def init(delta_t, x, mass, drag_coeff, area, k, coil_length, v=0.0) -> SimState:
 
 
 def step_sim(prev: SimState) -> SimState:
-    """
-    Perform a single step of the simulation, bumping time by `delta_t` updating
-    kinematic values and forces.
-
-    Return next state.
-    """
-
     c, k, _ = prev  # unpack SimState
-
-    # 'A <- B' means B depends on the value of A
-    # the dependency graph is (simplified):
-    # (f_g, f_d, f_s) <- f_net <- a <- v <- x
-    # where x <- f_d, (v, x) <- f_s
-    #
-    # So we'll calcualte spring and drag forces from the previous state,
-    # and then update Kin (a, v, x) from the resultant net force.
-    #
-    # It's a cyclical dependency graph, so there will be a delay in the
-    # updating of some values no matter how the graph is ordered. Decreasing
-    # `delta_t` will reduce the inaccuracy introduced by the cycle.
 
     drag = drag_force(prev.c, prev.k)
     spring = spring_force(prev.c, prev.k)
@@ -198,11 +179,9 @@ spring_forces = []
 f_nets = []
 drags = []
 
-# slide 8 Muddled molting part 2
-# num_steps = 10000
-stabilized =  init(
+prev = init(
     delta_t=0.002,
-    x=19.0,
+    x=19.0, 
     mass=1.0,
     drag_coeff=0.0,
     area=0.0,
@@ -210,62 +189,9 @@ stabilized =  init(
     coil_length=17.0,
     v=0.0,
 )
-
-# slide 8 Muddled molting part 2
-# num_steps = 10000
-stabilized =  init(
-    delta_t=0.002,
-    x=19.0,
-    mass=1.0,
-    drag_coeff=0.0,
-    area=0.0,
-    k=10,
-    coil_length=17.0,
-    v=0.0,
-)
-
-# slide 9 It breaks down
-# num_steps = 2000
-unstable =  init( delta_t=0.01, x=12.0, mass=1.0, drag_coeff=0.0, area=0.0, k=10, coil_length=12.0, v=0.0,
-)
-
-num_steps = 1000
-# change starting conditions here
-prev = unstable
-dummy = init(
-    # the lossy model (with two equilibrium points) comes to rest if the time
-    # step is lowered sufficiently. I think this is due to error inherent in
-    # our simulation style (current state calculations use old data and a
-    # linear approximation, so lowering delta_t increases accuracy two-fold).
-    delta_t=0.002,
-    x=19.0,
-    mass=1.0,
-    drag_coeff=0.0,
-    area=0.0,
-    k=10,
-    coil_length=17.0,
-    v=0.0,
-)
-
-# coil_length is upper equilibrium point
-# print(prev.c.coil_length)
-# print(equilibrium_w_mass(prev.c))  # lower equilibrium point
-# debug_state(prev)
+num_steps = 10000
 for i in range(0, num_steps):
     next = step_sim(prev)
-    # debug_state(next)
-
-    # collect data for plotting
-    # to add a graph, just initialize a list above (under comment "Visualization")
-    # and append the value you want to track here.
-    ts.append(next.k.t)  # time
-    xs.append(next.k.x)  # postiion
-    vs.append(next.k.v)  # velocity
-    accs.append(next.k.a)  # acceleration
-    spring_forces.append(next.f.spring)
-    f_nets.append(next.f.net)
-    drags.append(next.f.drag)
-
     prev = next
 
 
@@ -319,26 +245,26 @@ make_plot(
     y_data=accs,
 )
 
-# # spring force
-# make_plot(
-#     "Spring Force vs Time",
-#     "spring_force.png",
-#     x_label="t (s)",
-#     y_label="F (N)",
-#     x_data=ts,
-#     y_data=spring_forces,
-# )
-#
-# # spring force
-# make_plot(
-#     "Drag Force vs Time",
-#     "drag_force.png",
-#     x_label="t (s)",
-#     y_label="F (N)",
-#     x_data=ts,
-#     y_data=drags,
-# )
-#
+# spring force
+make_plot(
+    "Spring Force vs Time",
+    "spring_force.png",
+    x_label="t (s)",
+    y_label="F (N)",
+    x_data=ts,
+    y_data=spring_forces,
+)
+
+# spring force
+make_plot(
+    "Drag Force vs Time",
+    "drag_force.png",
+    x_label="t (s)",
+    y_label="F (N)",
+    x_data=ts,
+    y_data=drags,
+)
+
 # # spring force
 # make_plot(
 #     "NetForce vs Time",
