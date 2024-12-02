@@ -73,7 +73,7 @@ def init(
     )
     k = Kin(t=0, v=v, a=g, x=x)
     f = Forces.new(
-        grav=mass * g,
+        grav=mass * (g/12),
         drag=drag_force(c, k),
         spring=spring_force(c, k),
         damp=damping_force(c, k),
@@ -230,28 +230,14 @@ drags = []
 # slide 8 Muddled molting part 2
 # num_steps = 10000
 stabilized = init(
-    delta_t=0.002,
+    delta_t=0.006,
     x=19.0,
-    mass=1.0,
-    drag_coeff=0.0,
-    area=0.0,
+    mass=100.0,
+    drag_coeff=0.01,
+    area=0.1,
     k=10,
     coil_length=17.0,
-    b=0.0,
-    v=0.0,
-)
-
-# slide 8 Muddled molting part 2
-# num_steps = 10000
-stabilized = init(
-    delta_t=0.002,
-    x=19.0,
-    mass=1.0,
-    drag_coeff=0.0,
-    area=0.0,
-    k=10,
-    coil_length=17.0,
-    b=0.0,
+    b=0.1,
     v=0.0,
 )
 
@@ -269,25 +255,33 @@ unstable = init(
     v=0.0,
 )
 
-num_steps = 1000
+cart = init(delta_t=0.05, x=3.0, mass=1.0, drag_coeff=0.1, area=0.1, k=100,
+            coil_length=2.0, b=0.0, v=0.0, lossy_spring=False)
+
+
+num_steps = 10000
 # change starting conditions here
 #
 # the lossy model (with two equilibrium points) comes to rest if the time
 # step is lowered sufficiently. I think this is due to error inherent in
 # our simulation style (current state calculations use old data and a
 # linear approximation, so lowering delta_t increases accuracy two-fold).
+
+# FIXME: DO NOT DELETE, this models the cart asymmetry
 prev = init(
     delta_t=0.05,
     x=13.0,
     mass=1.0,
-    drag_coeff=.1,
+    drag_coeff=0.051,
     area=0.1,
     k=10,
     coil_length=8.0,
-    b=0.2,
+    b=0.0,
     v=0.0,
     lossy_spring=False,
 )
+
+
 
 # coil_length is upper equilibrium point
 # print(prev.c.coil_length)
@@ -417,3 +411,5 @@ html = table.get_html_string()
 with open("table.html", "w") as f:
     f.write(html)
 print(table)
+
+
