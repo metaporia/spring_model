@@ -2,9 +2,10 @@ from math import copysign
 from prettytable.colortable import ColorTable, Themes
 from typing import NamedTuple
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # GLOBALS
-g = -9.8  # m/s^2
+g = -9.8 # m/s^2
 MAX_STEPS = 100
 
 
@@ -73,7 +74,7 @@ def init(
     )
     k = Kin(t=0, v=v, a=g, x=x)
     f = Forces.new(
-        grav=mass * (g/12),
+        grav=mass*g,
         drag=drag_force(c, k),
         spring=spring_force(c, k),
         damp=damping_force(c, k),
@@ -112,7 +113,7 @@ def step_sim(prev: SimState) -> SimState:
     # update kinematic values from forces
     t = k.t + c.delta_t  # bump time
     a = new_forces.net / c.mass
-    v = prev.k.v + a * c.delta_t
+    v = check_for_ground_collision(c,k) * prev.k.v + a * c.delta_t
     x = prev.k.x + v * c.delta_t
 
     new_k = Kin(t=t, a=a, v=v, x=x)
@@ -121,6 +122,16 @@ def step_sim(prev: SimState) -> SimState:
     next = SimState(c, new_k, new_forces)
     return next
 
+
+
+def check_for_ground_collision(c, k) -> float:
+    """
+    checks if ball has hit ground, returns new velocity direction
+    """
+    if k.x < 0.0 and k.v < 0:
+        return -1
+    else:
+        return 1
 
 def damping_force(c: InitialConditions, k: Kin) -> float:
     """
@@ -227,19 +238,17 @@ spring_forces = []
 f_nets = []
 drags = []
 
+# →
+# x ≥ L
+# ∆t
 # slide 8 Muddled molting part 2
 # num_steps = 10000
-stabilized = init(
-    delta_t=0.006,
-    x=19.0,
-    mass=100.0,
-    drag_coeff=0.01,
-    area=0.1,
-    k=10,
-    coil_length=17.0,
-    b=0.1,
-    v=0.0,
-)
+stabilized = init(delta_t=0.12, x=6.0, mass=1.0, drag_coeff=0.01, area=0.5,
+                  k=0.1, coil_length=5.0, b=0.1, v=0.0,)
+
+damp = init( delta_t=0.01, x=8.0, mass=1.0, drag_coeff=0.01, area=0.5, k=0.9,
+            coil_length=5.0, b=0.01, v=0.0,)
+
 
 # slide 9 It breaks down
 # num_steps = 2000
@@ -255,11 +264,9 @@ unstable = init(
     v=0.0,
 )
 
-cart = init(delta_t=0.05, x=3.0, mass=1.0, drag_coeff=0.1, area=0.1, k=100,
-            coil_length=2.0, b=0.0, v=0.0, lossy_spring=False)
+cart = init(delta_t=0.1, x=3.0, mass=1.0, drag_coeff=0.1, area=0.1, k=10, coil_length=2.0, b=0.0, v=0.0, lossy_spring=False)
 
 
-num_steps = 10000
 # change starting conditions here
 #
 # the lossy model (with two equilibrium points) comes to rest if the time
@@ -268,13 +275,19 @@ num_steps = 10000
 # linear approximation, so lowering delta_t increases accuracy two-fold).
 
 # FIXME: DO NOT DELETE, this models the cart asymmetry
-prev = init(
+# as k goes up, the asymmetry appears
+#
+# requires grav = g/12
+asym= init( delta_t=0.05, x=13.0, mass=1.0, drag_coeff=0.051, area=0.1, k=10, coil_length=8.0, b=0.0, v=0.0, lossy_spring=False,)
+
+# FIXME: DO NOT DELETE, this shows a bizarre rough curve with super high k
+limit_rough_curve = init(
     delta_t=0.05,
     x=13.0,
     mass=1.0,
     drag_coeff=0.051,
     area=0.1,
-    k=10,
+    k=100,
     coil_length=8.0,
     b=0.0,
     v=0.0,
@@ -283,27 +296,36 @@ prev = init(
 
 
 
+num_steps = 1000
+prev = stabilized
+
+
+
+
 # coil_length is upper equilibrium point
 # print(prev.c.coil_length)
 # print(equilibrium_w_mass(prev.c))  # lower equilibrium point
 # debug_state(prev)
-for i in range(0, num_steps):
-    next = step_sim(prev)
-    # debug_state(next)
+def run(prev: SimState): 
+    for i in range(0, num_steps):
+        next = step_sim(prev)
+        # debug_state(next)
 
-    # collect data for plotting
-    # to add a graph, just initialize a list above (under comment "Visualization")
-    # and append the value you want to track here.
-    ts.append(next.k.t)  # time
-    xs.append(next.k.x)  # postiion
-    vs.append(next.k.v)  # velocity
-    accs.append(next.k.a)  # acceleration
-    spring_forces.append(next.f.spring)
-    f_nets.append(next.f.net)
-    drags.append(next.f.drag)
+        # collect data for plotting
+        # to add a graph, just initialize a list above (under comment "Visualization")
+        # and append the value you want to track here.
+        ts.append(next.k.t)  # time
+        xs.append(next.k.x)  # postiion
+        vs.append(next.k.v)  # velocity
+        accs.append(next.k.a)  # acceleration
+        spring_forces.append(next.f.spring)
+        f_nets.append(next.f.net)
+        drags.append(next.f.drag)
 
-    prev = next
+        prev = next
 
+
+#run(prev)
 
 def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
     """
@@ -320,96 +342,137 @@ def make_plot(title: str, filename: str, x_label: str, y_label: str, x_data, y_d
     if filename != "":
         plt.savefig(filename)
 
+def make_plot2(ax, title: str, filename: str, x_label: str, y_label: str, x_data, y_data):
+    """
 
-# position
-make_plot(
-    "Position vs Time",
-    "position.png",
-    x_label="t (s)",
-    y_label="x (m)",
-    x_data=ts,
-    y_data=xs,
-)
+    Add line to existing figure
+    Collect y_data in the for loop above that steps through the sim
+    """
+    #plt.title(title)
+    #plt.xlabel(x_label)
+    #plt.ylabel(y_label)
+    ax.plot(x_data, y_data, label=y_label)
 
-# if in jupyter, use:
-# plt.show()
+    # if filename != "":
+    #     plt.savefig(filename)
 
-# position
-make_plot(
-    "Velocity vs Time",
-    "velocity.png",
-    x_label="t (s)",
-    y_label="v (m/s)",
-    x_data=ts,
-    y_data=vs,
-)
+def plot_all():
+    suffix = ""
+    title_suffix = "Simulated Reproduction (with ground collision)"
+
+    ax = plt.subplot()
+    plt.title(title_suffix)
+    # position
+    make_plot2(
+        ax,
+        "Position vs Time" + title_suffix,
+        "test/position" + suffix + ".png",
+        x_label="t (s)",
+        y_label="x (m)",
+        x_data=ts,
+        y_data=xs,
+    )
+
+    # if in jupyter, use:
+    # plt.show()
+
+    # position
+    make_plot2(
+        ax,
+        "Velocity vs Time" + title_suffix,
+        "test/velocity" + suffix + ".png",
+        x_label="t (s)",
+        y_label="v (m/s)",
+        x_data=ts,
+        y_data=vs,
+    )
 
 
-# acceleration
-make_plot(
-    "Acceleration vs Time",
-    "acceleration.png",
-    x_label="t (s)",
-    y_label="a (m/s^2)",
-    x_data=ts,
-    y_data=accs,
-)
+    # acceleration
+    make_plot2(
+        ax,
+        "Acceleration vs Time" + title_suffix,
+        "test/acceleration" + suffix + ".png",
+        x_label="t (s)",
+        y_label="a (m/s^2)",
+        x_data=ts,
+        y_data=accs,
+    )
+    ax.legend()
 
-# # spring force
-# make_plot(
-#     "Spring Force vs Time",
-#     "spring_force.png",
-#     x_label="t (s)",
-#     y_label="F (N)",
-#     x_data=ts,
-#     y_data=spring_forces,
-# )
+    plt.show()
+    plt.savefig("many.png")
+
+
+def show_table():
+    # generate human readable table
+
+    table = ColorTable(theme=Themes.OCEAN)
+
+    # add columns
+    table.add_column("t (s)", ts)
+    table.add_column("v (m/s)", vs)
+    table.add_column("a (m/s^2)", accs)
+    table.add_column("x (m)", xs)
+    table.add_column("f_net (N)", f_nets)
+    table.add_column("F_S (N)", spring_forces)
+    table.add_column("Drag (N)", drags)
+
+    table.align = "r"
+    table.float_format = ".1"
+
+    # table -> html
+    table.format = True
+    table.border = True
+
+    html = table.get_html_string()
+    with open("table.html", "w") as f:
+        f.write(html)
+    print(table)
+
+
+# run everything
+run(damp)
+plot_all()
+show_table()
+
+
+# # inverted
+# # I think the velocity and acceleration columns are mixed up
+# # sorted it out
+# f = "data/motion_sensor_run2_inverted"
+# df = pd.read_csv(f + ".csv")
 #
-# # spring force
-# make_plot(
-#     "Drag Force vs Time",
-#     "drag_force.png",
-#     x_label="t (s)",
-#     y_label="F (N)",
-#     x_data=ts,
-#     y_data=drags,
-# )
+# # make_plot(title ="Position vs Time, Motion Sensor Run #1", 
+# #           filename = "test/inverted2-position.png",
+# #           x_label = "Time",
+# #           y_label = "Position",
+# #           x_data = df.Time,
+# #           y_data = (df.Pos * -1)
+# #           )
+# # df.Vel -> acceleration
+# # df.u1 -> Velocity
+# make_plot(title ="Acceleration vs Time, Motion Sensor Run #2", 
+#           filename = "test/inverted2-acc.png",
+#           x_label = "Time",
+#           y_label = "Acceleration",
+#           x_data = df.Time,
+#           y_data = (df.Vel * -1)
+#           )
 #
-# # spring force
-# make_plot(
-#     "NetForce vs Time",
-#     "net_force.png",
-#     x_label="t (s)",
-#     y_label="F (N)",
-#     x_data=ts,
-#     y_data=f_nets,
-# )
-#
-plt.show()
+# generate csv
 
-# generate human readable table
+# f = "data/cart_run_2"
+# df = pd.read_csv(f + ".csv")
+# print(df.columns)
 
-table = ColorTable(theme=Themes.OCEAN)
+# so acc_x and acc_r and kinda fucked. idk
 
-# add columns
-table.add_column("t (s)", ts)
-table.add_column("v (m/s)", vs)
-table.add_column("a (m/s^2)", accs)
-table.add_column("x (m)", xs)
-table.add_column("f_net (N)", f_nets)
-table.add_column("F_S (N)", spring_forces)
-table.add_column("Drag (N)", drags)
-
-table.align = "r"
-table.float_format = ".1"
-
-# table -> html
-table.format = True
-table.border = True
-
-html = table.get_html_string()
-with open("table.html", "w") as f:
-    f.write(html)
-print(table)
-
+# make_plot(title ="Acceleration_x vs Time, Cart Run #1", 
+#           filename = "test/cart2-Acceleration_x.png",
+#           x_label = "Time",
+#           y_label = "Acceleration_x",
+#           x_data = df.Time,
+#           y_data = (df.Force)
+#           )
 
